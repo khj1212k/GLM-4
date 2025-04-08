@@ -5,7 +5,8 @@ import dataclasses as dc
 import functools
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Annotated, Any, Union
+from typing import Any, Union
+from typing_extensions import Annotated
 import numpy as np
 import ruamel.yaml as yaml
 import torch
@@ -222,6 +223,7 @@ class DataManager(object):
             remove_columns = orig_dataset.column_names
         else:
             remove_columns = None
+        print("[DataManager] Mapping dataset:", split)
         return orig_dataset.map(
             process_fn,
             batched=batched,
@@ -250,7 +252,8 @@ def process_batch(
 
     max_length = max_input_length + max_output_length
 
-    for conv in batched_conv:
+    for i, conv in enumerate(batched_conv):
+        print(f"[process_batch] Handling sample {i+1}/{len(batched_conv)}")
         input_ids = [151331, 151333]
         attention_mask = [1, 1]
         position_ids = list(range(len(input_ids)))
@@ -258,7 +261,11 @@ def process_batch(
         images = []
 
         if conv[0].get("image"):
-            conv[0]["image"] = Image.open(conv[0]["image"]).convert("RGB")
+            try:
+                conv[0]["image"] = Image.open(conv[0]["image"]).convert("RGB")
+            except Exception as e:
+                print(f"[process_batch] Failed to open image: {conv[0]['image']} | Error: {e}")
+                conv[0]["image"] = img  # fallback
         else:
             conv[0]["image"] = img
 
